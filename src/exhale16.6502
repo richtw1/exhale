@@ -1,0 +1,9 @@
+SMALL_SCREEN = FALSE
+
+INCLUDE "boot.6502"
+INCLUDE "constants.6502"
+INCLUDE "main.6502"
+INCLUDE "entry.6502"
+PUTBASIC "test16.bas", "TEST"
+
+SAVE "EXHALE", beginning, P%, entry+RelocOffset, ReloadAddr

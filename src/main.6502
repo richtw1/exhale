@@ -1,0 +1,109 @@
+ORG 0
+
+\\ Uninitialized zero page variables
+
+
+\\ Zero page variables initialized to zero
+
+.zpzerostart
+.zpzeroend
+
+\\ Zero page variables which need explicit initialization
+
+.beginning
+
+.irqscrn		EQUW (ScreenBaseAddr DIV 8)
+.irqline		EQUB 0
+.irqvsync		EQUB 0
+.requpdate		EQUB 0
+.reqscrn		EQUW (ScreenBaseAddr DIV 8)
+.reqline		EQUB 0
+
+
+\\ Stack
+
+SKIPTO &100
+.stack
+	SKIP 16
+.stacktop
+
+
+\\ Irq related code
+
+.irq
+	BIT &FE4D
+	BVS irqscrntop
+	.irqbranchdest
+
+	LDA &FC
+	RTI
+	
+.irqscrntop
+	LDA #8:STA &FE00:LDA #&C0:STA &FE01
+	LDA #6:STA &FE00:LDA #GameHeight+1:STA &FE01
+	LDA #7:STA &FE00:LDA #255:STA &FE01
+	LDA #4:STA &FE00:LDA #GameHeight-1:STA &FE01
+	LDA #5:STA &FE00:LDA irqline:STA &FE01
+	LDA #12:STA &FE00:LDA #HI(ScreenStatusAddr DIV 8):STA &FE01
+	LDA #13:STA &FE00:LDA #LO(ScreenStatusAddr DIV 8):STA &FE01
+	LDA #(irqscrnbottom-irqbranchdest) AND &FF:STA irqbranchdest-1
+	LDA #HI(4 * 8 * 64 - 2):STA &FE47
+	LDA &FC
+	RTI
+
+.irqscrnverybottom
+	LDA #8:STA &FE00:LDA #&F0:STA &FE01
+	LDA #(irqscrntop-irqbranchdest) AND &FF:STA irqbranchdest-1
+	LDA #HI(GameHeight * 8 * 64 - 2):STA &FE47
+	LDA &FC
+	RTI
+
+.irqscrnbottom
+	INC irqvsync
+	LDA requpdate:BEQ noupdate
+	LDA irqvsync:CMP #2:BCC noupdate
+	LDA #0:STA requpdate:STA irqvsync
+	LDA reqscrn:STA irqscrn
+	LDA reqscrn+1:STA irqscrn+1
+	LDA reqline:STA irqline
+	.noupdate
+	LDA #6:STA &FE00:LDA #StatusHeight:STA &FE01
+	LDA #7:STA &FE00:LDA #ScreenVSyncPos-GameHeight:STA &FE01
+	LDA #5:STA &FE00:SEC:LDA #8:SBC irqline:STA &FE01
+	LDA #4:STA &FE00:LDA #37-GameHeight:STA &FE01
+	LDA #12:STA &FE00:LDA irqscrn+1:STA &FE01
+	LDA #13:STA &FE00:LDA irqscrn:STA &FE01
+	LDA #(irqscrnverybottom-irqbranchdest) AND &FF:STA irqbranchdest-1
+	LDA #HI((39 - 4 - GameHeight) * 8 * 64 - 2):STA &FE47
+	LDA &FC
+	RTI
+	
+
+
+SKIPTO &204
+	EQUW irq
+	
+	
+SKIPTO &258
+	EQUB 2
+
+
+.start
+.mainloop
+;	LDA #98
+;	.waitforkey STA &FE4F:BIT &FE4F:BPL waitforkey
+;	.waitforkey2 STA &FE4F:BIT &FE4F:BMI waitforkey2
+
+	INC reqscrn:BNE P%+4:INC reqscrn+1
+	LDA reqline:CLC:ADC #1:AND #7:STA reqline
+	BNE sameline
+	LDA reqscrn:CLC:ADC #ScreenWidth:STA reqscrn
+	LDA reqscrn+1:ADC #0:CMP #&10:BCC P%+4:LDA #HI(ScreenBaseAddr DIV 8):STA reqscrn+1
+	.sameline
+	
+	LDA #1:STA requpdate
+	.wait LDA(0,x):LDA(0,X):LDA(0,X):LDA(0,X):LDA(0,X):LDA requpdate:BNE wait
+	
+	JMP mainloop
+
+	
