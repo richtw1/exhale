@@ -46,14 +46,14 @@ SKIPTO &100
 	LDA #5:STA &FE00:LDA irqline:STA &FE01
 	LDA #12:STA &FE00:LDA #HI(ScreenStatusAddr DIV 8):STA &FE01
 	LDA #13:STA &FE00:LDA #LO(ScreenStatusAddr DIV 8):STA &FE01
-	LDA #(irqscrnbottom-irqbranchdest) AND &FF:STA irqbranchdest-1
+	LDA #(irqscrnbottom-irqbranchdest):STA irqbranchdest-1
 	LDA #HI(4 * 8 * 64 - 2):STA &FE47
 	LDA &FC
 	RTI
 
 .irqscrnverybottom
 	LDA #8:STA &FE00:LDA #&F0:STA &FE01
-	LDA #(irqscrntop-irqbranchdest) AND &FF:STA irqbranchdest-1
+	LDA #(irqscrntop-irqbranchdest):STA irqbranchdest-1
 	LDA #HI(GameHeight * 8 * 64 - 2):STA &FE47
 	LDA &FC
 	RTI
@@ -61,7 +61,7 @@ SKIPTO &100
 .irqscrnbottom
 	INC irqvsync
 	LDA requpdate:BEQ noupdate
-	LDA irqvsync:CMP #2:BCC noupdate
+	LDA irqvsync:.framecount CMP #1:BCC noupdate
 	LDA #0:STA requpdate:STA irqvsync
 	LDA reqscrn:STA irqscrn
 	LDA reqscrn+1:STA irqscrn+1
@@ -73,7 +73,7 @@ SKIPTO &100
 	LDA #4:STA &FE00:LDA #37-GameHeight:STA &FE01
 	LDA #12:STA &FE00:LDA irqscrn+1:STA &FE01
 	LDA #13:STA &FE00:LDA irqscrn:STA &FE01
-	LDA #(irqscrnverybottom-irqbranchdest) AND &FF:STA irqbranchdest-1
+	LDA #(irqscrnverybottom-irqbranchdest):STA irqbranchdest-1
 	LDA #HI((39 - 4 - GameHeight) * 8 * 64 - 2):STA &FE47
 	LDA &FC
 	RTI

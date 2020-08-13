@@ -108,6 +108,10 @@ ENDIF
 	BIT &FE4D 		; 6
 	BNE syncloop 	; 3 (total = 39920+6+6+3 = 39935, one cycle less than a frame!)
 
+	IF HI(syncloop) <> HI(P%)
+	ERROR "This loop must execute within the same page"
+	ENDIF
+
 	; We are synced precisely with VSync!
 	; Now we have to set up the first timer which will take us
 	; to the first line of the visible screen
